@@ -51,7 +51,7 @@ public final class UpgradeFurnace extends JavaPlugin {
 
         // Plugin Updater
         String updateUrl = "https://raw.githubusercontent.com/LowdFX/Upgrade-Furnace/refs/heads/main/update.txt";
-        String downloadLink = "https://www.spigotmc.org/resources/lowdfx.123832/";
+        String downloadLink = "https://www.spigotmc.org/resources/upgrade-furnace.124315/";
         getServer().getPluginManager().registerEvents(new UpdaterJoinListener(this, updateUrl, downloadLink), this);
         getServer().getPluginManager().registerEvents(new UpgradeCommands(), this);
 
