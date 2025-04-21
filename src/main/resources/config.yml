@@ -1,0 +1,37 @@
+#################################################################################
+##                   _                        _  _____ __  __                  ##
+##_________________ | |     ___ __      __ __| ||  ___|\ \/ / _________________##
+##_________________ | |    / _ \\ \ /\ / // _` || |_    \  /  _________________##
+##_________________ | |___| (_) |\ V  V /| (_| ||  _|   /  \  _________________##
+##_________________ |_____|\___/  \_/\_/  \__,_||_|    /_/\_\ _________________##
+##                                Configuration                                ##
+#################################################################################
+
+language: "de"
+## Alle Nachrichten, wenn Spieler den Server betreten oder verlassen.
+# Im MiniMessage format: https://docs.advntr.dev/minimessage/index.html.
+# Der Placeholder "{0}" ist der Spielername.
+
+## Allgemeine Einstellungen.
+basic:
+
+  # Steht vor jeder Befehlsnachricht.
+  server-name: "LoudCraft"
+
+  # Custom /help Befehl vom Plugin an/aus
+  customhelp: true
+
+## Öfen Einstellungen.
+requirements:
+  1:
+    material: IRON_INGOT
+    amount: 32
+  2:
+    material: GOLD_INGOT
+    amount: 32
+  3:
+    material: EMERALD
+    amount: 32
+  4:
+    material: NETHERITE_INGOT
+    amount: 10

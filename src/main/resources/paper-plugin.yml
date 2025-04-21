@@ -1,0 +1,22 @@
+### Plugin Name ###
+name: UpgradeFurnace
+
+### Build Version ###
+version: '1.0.0'
+
+### Main Class ###
+main: at.lowdfx.upgradeFurnace.UpgradeFurnace
+
+### Loader Class (1.20.4+) ###
+loader: at.lowdfx.upgradeFurnace.LowLoader
+
+### PaperAPI Version ###
+api-version: '1.21'
+
+### Autoren ###
+authors:
+  - LowdFX
+
+### Softdepends ###
+softdepend:
+  - LuckPerms
