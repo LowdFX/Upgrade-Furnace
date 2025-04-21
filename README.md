@@ -19,7 +19,7 @@ _**A PaperMC 1.21.4 plugin to upgrade furnaces for faster smelting and bonus yie
 
 ## Installation
 
-1. Download the latest `UpgradeFurnace.jar` from the [SpigotMC](https://www.spigotmc.org/resources/lowdfx.123832/) page. Link directs to LowdFX Plugin. Upgrade Furnace Plugin is not yet on SpigotMC because it isn`t finished.
+1. Download the latest `UpgradeFurnace.jar` from the [SpigotMC](https://www.spigotmc.org/resources/upgrade-furnace.124315/) page. Link directs to LowdFX Plugin. Upgrade Furnace Plugin is not yet on SpigotMC because it isn`t finished.
 2. Place the JAR into your server's `plugins` folder.
 3. Start the server to generate default config and permissions files.
 
