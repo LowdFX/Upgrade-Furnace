@@ -31,23 +31,32 @@ basic:
   customhelp: true
 
 requirements:
-  1:
+  '1':
     material: IRON_INGOT
     amount: 32
-  2:
+    xp_levels: 0
+  '2':
     material: GOLD_INGOT
     amount: 32
-  3:
-    material: EMERALD
+    xp_levels: 0
+  '3':
+    material: DIAMOND
     amount: 32
-  4:
+    xp_levels: 0
+  '4':
     material: NETHERITE_INGOT
-    amount: 10
+    amount: 20
+    xp_levels: 0
+  '5':
+    material: NETHERITE_INGOT
+    amount: 30
+    xp_levels: 100
 ```
 
 - **`basic.server-name`**: Prefix for plugin messages.
 - **`requirements.<level>.material`**: Material needed for that upgrade level.
 - **`requirements.<level>.amount`**: Amount of material required.
+- **`requirements.<level>.xp_levels`**: Amount of XP level required.
 
 ## Commands
 
@@ -56,7 +65,7 @@ requirements:
 | `/upgrade furnace`        | `upgradefurnace.upgrade.furnace`   | Upgrade the furnace you're looking at.  |
 
 - **Usage**: Look at a furnace and run `/upgrade furnace`. The plugin checks your inventory for the required materials and performs the upgrade if possible.
-- **Max Level**: 4
+- **Max Level**: 5
 
 ## Permissions
 
