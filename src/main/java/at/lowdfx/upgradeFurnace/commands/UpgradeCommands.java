@@ -1,5 +1,6 @@
 package at.lowdfx.upgradeFurnace.commands;
 
+import at.lowdfx.upgradeFurnace.util.Utilities;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -11,16 +12,18 @@ import org.bukkit.block.Furnace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.FurnaceStartSmeltEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import at.lowdfx.upgradeFurnace.UpgradeFurnace;
@@ -34,15 +37,10 @@ import java.util.UUID;
 
 @SuppressWarnings("UnstableApiUsage")
 public class UpgradeCommands implements Listener {
-
     private static final NamespacedKey KEY_LEVEL = new NamespacedKey("upgradefurnace", "level");
     private static final NamespacedKey KEY_HOLO = new NamespacedKey("upgradefurnace", "hologram");
     private static final Random RANDOM = new Random();
 
-    /**
-     * /upgrade furnace
-     * erhöht das Upgrade-Level um 1 bis max 4
-     */
     public static LiteralCommandNode<CommandSourceStack> furnaceCommand() {
         return LiteralArgumentBuilder.<CommandSourceStack>literal("upgrade")
                 .requires(src -> {
@@ -54,57 +52,123 @@ public class UpgradeCommands implements Listener {
                             Player player = (Player) ctx.getSource().getSender();
                             Furnace furnace = getTargetFurnace(player);
                             if (furnace == null) {
+                                Utilities.negativeSound(player);
                                 player.sendMessage(UpgradeFurnace.serverMessage(
                                         Component.text("Schau auf einen Ofen!", NamedTextColor.RED)
                                 ));
+
                                 return 0;
                             }
                             PersistentDataContainer pdc = furnace.getPersistentDataContainer();
                             int current = pdc.getOrDefault(KEY_LEVEL, PersistentDataType.INTEGER, 0);
-                            if (current >= 4) {
+                            if (current >= 5) {
+                                Utilities.negativeSound(player);
                                 player.sendMessage(UpgradeFurnace.serverMessage(
                                         Component.text("Dieser Ofen ist bereits auf höchstem Level!", NamedTextColor.YELLOW)
                                 ));
+
                                 return 1;
                             }
                             int next = current + 1;
-
-                            // Config auslesen
-                            FileConfiguration cfg = Configuration.get();
-                            String matName = cfg.getString("requirements." + next + ".material");
-                            int req = cfg.getInt("requirements." + next + ".amount");
-                            Material mat;
-                            try {
-                                mat = Material.valueOf(matName.toUpperCase());
-                            } catch (Exception e) {
+                            Material mat = Configuration.getRequirementMaterial(next);
+                            int req = Configuration.getRequirementAmount(next);
+                            int xpReq = Configuration.getRequirementXpLevels(next);
+                            if (mat == null) {
+                                Utilities.negativeSound(player);
                                 player.sendMessage(UpgradeFurnace.serverMessage(
                                         Component.text("Fehler in der Config: Material ungültig", NamedTextColor.RED)
                                 ));
+
                                 return 0;
                             }
                             if (!player.getInventory().contains(mat, req)) {
+                                Utilities.negativeSound(player);
                                 player.sendMessage(UpgradeFurnace.serverMessage(
-                                        Component.text("Du brauchst " + req + " " + matName.toLowerCase() + " für Level " + next, NamedTextColor.RED)
+                                        Component.text("Du brauchst " + req + " " + mat.name().toLowerCase() + " für Level " + next, NamedTextColor.RED)
                                 ));
+
+                                return 0;
+                            }
+                            if (xpReq > 0 && player.getLevel() < xpReq) {
+                                Utilities.negativeSound(player);
+                                player.sendMessage(UpgradeFurnace.serverMessage(
+                                        Component.text("Du benötigst mindestens " + xpReq + " Erfahrungslevel für Level " + next, NamedTextColor.RED)
+                                ));
+
                                 return 0;
                             }
                             player.getInventory().removeItem(new ItemStack(mat, req));
-
-                            // Level setzen
+                            if (xpReq > 0) player.giveExpLevels(-xpReq);
                             pdc.set(KEY_LEVEL, PersistentDataType.INTEGER, next);
                             furnace.update();
-
-                            // Hologramm aktualisieren
                             removeHologram(furnace);
                             spawnHologram(furnace, next);
-
+                            Utilities.positiveSound(player);
                             player.sendMessage(UpgradeFurnace.serverMessage(
                                     Component.text("Ofen auf Level " + next + " geupgraded!", NamedTextColor.GREEN)
                             ));
+
                             return 1;
                         })
                 )
                 .build();
+    }
+
+    @EventHandler
+    public void onStartSmelt(FurnaceStartSmeltEvent evt) {
+        Furnace furnace = (Furnace) evt.getBlock().getState();
+        int lvl = furnace.getPersistentDataContainer().getOrDefault(KEY_LEVEL, PersistentDataType.INTEGER, 0);
+        if (lvl <= 1) return;
+        evt.setTotalCookTime(evt.getTotalCookTime() / (1 + lvl));
+    }
+
+    @EventHandler
+    public void onSmelt(FurnaceSmeltEvent evt) {
+        Block block = evt.getBlock();
+        if (!(block.getState() instanceof Furnace furnace)) return;
+        Integer level = furnace.getPersistentDataContainer().get(KEY_LEVEL, PersistentDataType.INTEGER);
+        if (level == null || level <= 1) return;
+        ItemStack result = evt.getResult();
+        int amount = result.getAmount();
+        if (level == 5) amount *= (1 + RANDOM.nextInt(4));
+        else if (level == 4) amount *= (1 + RANDOM.nextInt(3));
+        else for (int i = 0; i < level; i++) if (RANDOM.nextDouble() < 0.3) amount++;
+        result.setAmount(amount);
+        evt.setResult(result);
+        spawnSmeltParticles(furnace, level);
+    }
+
+    @EventHandler
+    public void onFurnaceBreak(BlockBreakEvent evt) {
+        Block block = evt.getBlock();
+        if (!(block.getState() instanceof Furnace furnace)) return;
+        PersistentDataContainer pdc = furnace.getPersistentDataContainer();
+        int level = pdc.getOrDefault(KEY_LEVEL, PersistentDataType.INTEGER, 0);
+        removeHologram(furnace);
+        furnace.update();
+        evt.setDropItems(false);
+        ItemStack dropped = new ItemStack(Material.FURNACE);
+        ItemMeta meta = dropped.getItemMeta();
+        meta.getPersistentDataContainer().set(KEY_LEVEL, PersistentDataType.INTEGER, level);
+        meta.displayName(Component.text("Upgraded Furnace Lvl " + level, NamedTextColor.GOLD));
+        dropped.setItemMeta(meta);
+        block.getWorld().dropItemNaturally(block.getLocation(), dropped);
+    }
+
+    @EventHandler
+    public void onFurnacePlace(BlockPlaceEvent evt) {
+        Block block = evt.getBlockPlaced();
+        if (!(block.getState() instanceof Furnace furnace)) return;
+        ItemStack item = evt.getItemInHand();
+        ItemMeta meta = item.getItemMeta();
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+        if (container.has(KEY_LEVEL, PersistentDataType.INTEGER)) {
+            int level = container.get(KEY_LEVEL, PersistentDataType.INTEGER);
+            PersistentDataContainer pdc = furnace.getPersistentDataContainer();
+            pdc.set(KEY_LEVEL, PersistentDataType.INTEGER, level);
+            furnace.update();
+            spawnHologram(furnace, level);
+        }
     }
 
     private static Furnace getTargetFurnace(Player player) {
@@ -134,12 +198,9 @@ public class UpgradeCommands implements Listener {
         holo.setGravity(false);
         holo.setVisible(false);
         holo.setMarker(true);
-
         PersistentDataContainer pdc = furnace.getPersistentDataContainer();
         pdc.set(KEY_HOLO, PersistentDataType.STRING, holo.getUniqueId().toString());
         furnace.update();
-
-        // Spawn particle effect based on level
         Location center = furnace.getBlock().getLocation().add(0.5, 0.5, 0.5);
         Particle particle;
         switch (level) {
@@ -147,88 +208,28 @@ public class UpgradeCommands implements Listener {
             case 2 -> particle = Particle.FLAME;
             case 3 -> particle = Particle.CLOUD;
             case 4 -> particle = Particle.SOUL_FIRE_FLAME;
+            case 5 -> particle = Particle.DRAGON_BREATH;
             default -> particle = Particle.SMOKE;
         }
-        // swirl around furnace: larger horizontal offsets, slight upward
-        double radius = 1.0;
-        int count = 20;
-        double extraSpeed = 0.05;
-        furnace.getWorld().spawnParticle(
-                particle,
-                center,
-                count,
-                radius, // offsetX
-                0.5,    // offsetY
-                radius, // offsetZ
-                extraSpeed
-        );
+        furnace.getWorld().spawnParticle(particle, center, 20, 1.0, 0.5, 1.0, 0.05);
     }
-
-    @EventHandler
-    public void onStartSmelt(FurnaceStartSmeltEvent evt) {
-        Furnace furnace = (Furnace) evt.getBlock().getState();
-        int lvl = furnace.getPersistentDataContainer().getOrDefault(KEY_LEVEL, PersistentDataType.INTEGER, 0);
-        if (lvl <= 1) return;
-        evt.setTotalCookTime(evt.getTotalCookTime() / (1 + lvl));
-    }
-
-    @EventHandler
-    public void onSmelt(FurnaceSmeltEvent evt) {
-        Block block = evt.getBlock();
-        if (!(block.getState() instanceof Furnace furnace)) return;
-        Integer level = furnace.getPersistentDataContainer().get(KEY_LEVEL, PersistentDataType.INTEGER);
-        if (level == null || level <= 1) return;
-
-        // Ergebnis anpassen
-        ItemStack result = evt.getResult();
-        int amount = result.getAmount();
-        if (level == 4) {
-            // 1–3× Multiplikator
-            amount *= (1 + RANDOM.nextInt(3));
-        } else {
-            // einfach +1 Chance pro Level
-            for (int i = 0; i < level; i++) {
-                if (RANDOM.nextDouble() < 0.3) amount++;
-            }
-        }
-        result.setAmount(amount);
-        evt.setResult(result);
-
-        // Partikel an der Feuerstelle spawnen
-        spawnSmeltParticles(furnace, level);
-    }
-
 
     private void spawnSmeltParticles(Furnace furnace, int level) {
-        // Blockzentrum plus y‑Offset
         Location loc = furnace.getBlock().getLocation().add(0.5, 0.3, 0.5);
-
-        // Facing‑Direction ermitteln (Front des Ofens)
         BlockData data = furnace.getBlock().getBlockData();
         if (data instanceof Directional directional) {
             Vector dir = directional.getFacing().getDirection();
-            loc.add(dir.multiply(0.52)); // knapp vor der Front
+            loc.add(dir.multiply(0.52));
         }
-
         Particle particle;
         switch (level) {
             case 1 -> particle = Particle.SMOKE;
             case 2 -> particle = Particle.FLAME;
             case 3 -> particle = Particle.CLOUD;
             case 4 -> particle = Particle.SOUL_FIRE_FLAME;
+            case 5 -> particle = Particle.DRAGON_BREATH;
             default -> particle = Particle.SMOKE;
         }
-
-        furnace.getWorld().spawnParticle(
-                particle,
-                loc,
-                8,    // count
-                0.15, // offsetX
-                0.15, // offsetY
-                0.15, // offsetZ
-                0.02  // extra
-        );
+        furnace.getWorld().spawnParticle(particle, loc, 8, 0.15, 0.15, 0.15, 0.02);
     }
-
-
 }

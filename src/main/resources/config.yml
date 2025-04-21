@@ -26,12 +26,21 @@ requirements:
   1:
     material: IRON_INGOT
     amount: 32
+    xp_levels: 0
   2:
     material: GOLD_INGOT
     amount: 32
+    xp_levels: 0
   3:
-    material: EMERALD
+    material: DIAMOND
     amount: 32
+    xp_levels: 0
   4:
     material: NETHERITE_INGOT
-    amount: 10
+    amount: 20
+    xp_levels: 0
+  5:
+    material: NETHERITE_INGOT
+    amount: 30
+    xp_levels: 100
+

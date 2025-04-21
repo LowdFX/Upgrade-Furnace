@@ -20,3 +20,4 @@ authors:
 ### Softdepends ###
 softdepend:
   - LuckPerms
+  - LowdFX

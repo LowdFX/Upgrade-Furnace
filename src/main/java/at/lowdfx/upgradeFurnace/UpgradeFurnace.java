@@ -1,28 +1,28 @@
 package at.lowdfx.upgradeFurnace;
 
+import at.lowdfx.lowdfx.util.LowdFXAPI;
 import at.lowdfx.metrics.Metrics;
 import at.lowdfx.upgradeFurnace.commands.UpgradeCommands;
-import at.lowdfx.upgradeFurnace.util.Configuration;
-import at.lowdfx.upgradeFurnace.util.FileUpdater;
-import at.lowdfx.upgradeFurnace.util.Perms;
-import at.lowdfx.upgradeFurnace.util.UpdaterJoinListener;
+import at.lowdfx.upgradeFurnace.util.*;
 import com.marcpg.libpg.MinecraftLibPG;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import xyz.xenondevs.invui.InvUI;
 
+import java.lang.reflect.Method;
 import java.nio.file.Path;
-import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 @SuppressWarnings({ "UnstableApiUsage", "ResultOfMethodCallIgnored" })
 public final class UpgradeFurnace extends JavaPlugin {
-    public static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm");
 
     public static Logger LOG;
     public static UpgradeFurnace PLUGIN;
@@ -50,8 +50,8 @@ public final class UpgradeFurnace extends JavaPlugin {
         Perms.loadPermissions();
 
         // Plugin Updater
-        String updateUrl = "https://raw.githubusercontent.com/LowdFX/LowdFX-Minecraft-Server-Plugin/refs/heads/master/update.txt";
-        String downloadLink = "https://github.com/LowdFX/LowdFX-Minecraft-Server-Plugin/releases";
+        String updateUrl = "https://raw.githubusercontent.com/LowdFX/Upgrade-Furnace/refs/heads/main/update.txt";
+        String downloadLink = "https://www.spigotmc.org/resources/lowdfx.123832/";
         getServer().getPluginManager().registerEvents(new UpdaterJoinListener(this, updateUrl, downloadLink), this);
         getServer().getPluginManager().registerEvents(new UpgradeCommands(), this);
 
@@ -64,13 +64,51 @@ public final class UpgradeFurnace extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             Commands registrar = event.registrar();
-            registrar.register(UpgradeCommands.furnaceCommand(), "Erstelle oder verwalte einen Kisten-Shop.");
+            registrar.register(UpgradeCommands.furnaceCommand(), "Upgrade einen Ofen für eine schnellere Produktion und im letzten Level zufällig mehr Ertrag.");
+
+            Plugin lowd = getServer()
+                    .getPluginManager()
+                    .getPlugin("LowdFX"); // genau so, wie es in der Konsole steht
+
+            if (lowd != null && Configuration.BASIC_CUSTOM_HELP) {
+                try {
+                    // 2) Lade die API‐Klasse aus dem ClassLoader von LowdFX
+                    ClassLoader loader = lowd.getClass().getClassLoader();
+                    Class<?> api = loader.loadClass("at.lowdfx.lowdfx.util.LowdFXAPI");
+
+                    // 3) Hole die Methode registerHelpEntry(...)
+                    Method reg = api.getMethod(
+                            "registerHelpEntry",
+                            String.class,
+                            Component.class,
+                            Component.class,
+                            Component.class,
+                            String.class,
+                            String.class
+                    );
+
+                    // 4) Rufe sie statisch auf
+                    reg.invoke(
+                            null,                            // static
+                            "upgrade",               // command
+                            MiniMessage.miniMessage().deserialize("Ofen upgraden"), // usage
+                            MiniMessage.miniMessage().deserialize("<gray>Mit diesem Befehl kannst du deinen Ofen upgraden für eine schnellere Produktion und im letzten Level für zufällig mehr Ertrag.<newline></gray>" +
+                                    "<yellow>· /upgrade furnace</yellow>"),
+                            null,                            // adminDetailed
+                            "upgradefurnace.upgrade.furnace",        // permission
+                            null                             // adminPermission
+                    );
+                } catch (ReflectiveOperationException e) {
+                    getLogger().warning("Konnte LowdFXAPI nicht aufrufen: " + e.getMessage());
+                }
+            }
 
         });
 
         LOG.info("UpgradeFurnace Plugin gestartet!");
 
     }
+
 
     @Override
     public void onDisable() {
