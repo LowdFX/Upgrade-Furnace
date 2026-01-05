@@ -1,10 +1,8 @@
 package at.lowdfx.upgradeFurnace;
 
-import at.lowdfx.lowdfx.util.LowdFXAPI;
 import at.lowdfx.metrics.Metrics;
 import at.lowdfx.upgradeFurnace.commands.UpgradeCommands;
 import at.lowdfx.upgradeFurnace.util.*;
-import com.marcpg.libpg.MinecraftLibPG;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.kyori.adventure.text.Component;
@@ -28,6 +26,7 @@ public final class UpgradeFurnace extends JavaPlugin {
     public static UpgradeFurnace PLUGIN;
     public static Path PLUGIN_DIR;
     public static Path DATA_DIR;
+    public static FurnaceParticleManager PARTICLE_MANAGER;
 
 
 
@@ -44,10 +43,13 @@ public final class UpgradeFurnace extends JavaPlugin {
         DATA_DIR.toFile().mkdirs();
 
         InvUI.getInstance().setPlugin(this);
-        MinecraftLibPG.init(this);
         Configuration.init(this);
 
         Perms.loadPermissions();
+
+        // Partikel-Manager starten
+        PARTICLE_MANAGER = new FurnaceParticleManager();
+        PARTICLE_MANAGER.start();
 
         // Plugin Updater
         String updateUrl = "https://raw.githubusercontent.com/LowdFX/Upgrade-Furnace/refs/heads/main/update.txt";
@@ -112,7 +114,10 @@ public final class UpgradeFurnace extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // onDisable
+        // Partikel-Manager stoppen
+        if (PARTICLE_MANAGER != null) {
+            PARTICLE_MANAGER.stop();
+        }
         LOG.info("UpgradeFurnace Plugin deaktiviert!");
     }
 

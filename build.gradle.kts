@@ -16,7 +16,6 @@ repositories {
 
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://repo.xenondevs.xyz/releases/")
-    maven("https://marcpg.com/repo/")
     maven { url = uri("https://repo.codemc.io/repository/maven-releases/") }
     maven { url = uri("https://repo.codemc.io/repository/maven-snapshots/") }
     maven {
@@ -26,13 +25,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.3-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     compileOnly("xyz.xenondevs.invui:invui:1.43")
-    implementation("com.marcpg:libpg-paper:1.0.1")
-    implementation("com.marcpg:libpg-storage-json:1.0.1")
-    implementation("com.marcpg:libpg-storage-yaml:1.0.1")
     implementation("de.tr7zw:item-nbt-api:2.14.1")
-    implementation(files("lib/craftbukkit-1.21.4-R0.1-SNAPSHOT-remapped-mojang.jar"))
 }
 
 tasks {
@@ -41,7 +36,7 @@ tasks {
     }
     runServer {
         dependsOn(shadowJar)
-        minecraftVersion("1.21.4")
+        minecraftVersion("1.21.11")
     }
     shadowJar {
         archiveClassifier.set("") // Kein -all im .jar Namen.

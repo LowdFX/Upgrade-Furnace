@@ -103,6 +103,8 @@ public class UpgradeCommands implements Listener {
                             furnace.update();
                             removeHologram(furnace);
                             spawnHologram(furnace, next);
+                            // Für Partikel-Animation registrieren
+                            UpgradeFurnace.PARTICLE_MANAGER.updateFurnace(furnace.getLocation(), next);
                             Utilities.positiveSound(player);
                             player.sendMessage(UpgradeFurnace.serverMessage(
                                     Component.text("Ofen auf Level " + next + " geupgraded!", NamedTextColor.GREEN)
@@ -118,8 +120,9 @@ public class UpgradeCommands implements Listener {
     public void onStartSmelt(FurnaceStartSmeltEvent evt) {
         Furnace furnace = (Furnace) evt.getBlock().getState();
         int lvl = furnace.getPersistentDataContainer().getOrDefault(KEY_LEVEL, PersistentDataType.INTEGER, 0);
-        if (lvl <= 1) return;
-        evt.setTotalCookTime(evt.getTotalCookTime() / (1 + lvl));
+        if (lvl < 1) return;
+        int speedMultiplier = Configuration.getSpeedMultiplier(lvl);
+        evt.setTotalCookTime(evt.getTotalCookTime() / speedMultiplier);
     }
 
     @EventHandler
@@ -145,6 +148,8 @@ public class UpgradeCommands implements Listener {
         PersistentDataContainer pdc = furnace.getPersistentDataContainer();
         int level = pdc.getOrDefault(KEY_LEVEL, PersistentDataType.INTEGER, 0);
         removeHologram(furnace);
+        // Aus Partikel-Animation entfernen
+        UpgradeFurnace.PARTICLE_MANAGER.unregisterFurnace(furnace.getLocation());
         furnace.update();
         evt.setDropItems(false);
         ItemStack dropped = new ItemStack(Material.FURNACE);
@@ -168,6 +173,8 @@ public class UpgradeCommands implements Listener {
             pdc.set(KEY_LEVEL, PersistentDataType.INTEGER, level);
             furnace.update();
             spawnHologram(furnace, level);
+            // Für Partikel-Animation registrieren
+            UpgradeFurnace.PARTICLE_MANAGER.registerFurnace(furnace.getLocation(), level);
         }
     }
 
@@ -202,15 +209,7 @@ public class UpgradeCommands implements Listener {
         pdc.set(KEY_HOLO, PersistentDataType.STRING, holo.getUniqueId().toString());
         furnace.update();
         Location center = furnace.getBlock().getLocation().add(0.5, 0.5, 0.5);
-        Particle particle;
-        switch (level) {
-            case 1 -> particle = Particle.SMOKE;
-            case 2 -> particle = Particle.FLAME;
-            case 3 -> particle = Particle.CLOUD;
-            case 4 -> particle = Particle.SOUL_FIRE_FLAME;
-            case 5 -> particle = Particle.DRAGON_BREATH;
-            default -> particle = Particle.SMOKE;
-        }
+        Particle particle = Configuration.getParticle(level);
         furnace.getWorld().spawnParticle(particle, center, 20, 1.0, 0.5, 1.0, 0.05);
     }
 
@@ -221,15 +220,7 @@ public class UpgradeCommands implements Listener {
             Vector dir = directional.getFacing().getDirection();
             loc.add(dir.multiply(0.52));
         }
-        Particle particle;
-        switch (level) {
-            case 1 -> particle = Particle.SMOKE;
-            case 2 -> particle = Particle.FLAME;
-            case 3 -> particle = Particle.CLOUD;
-            case 4 -> particle = Particle.SOUL_FIRE_FLAME;
-            case 5 -> particle = Particle.DRAGON_BREATH;
-            default -> particle = Particle.SMOKE;
-        }
+        Particle particle = Configuration.getParticle(level);
         furnace.getWorld().spawnParticle(particle, loc, 8, 0.15, 0.15, 0.15, 0.02);
     }
 }

@@ -22,25 +22,37 @@ basic:
   customhelp: true
 
 ## Öfen Einstellungen.
+# speed_multiplier: Teilt die Koch-Zeit (höher = schneller)
+# particle: Partikel-Effekt beim Upgrade und Schmelzen
 requirements:
   1:
     material: IRON_INGOT
     amount: 32
     xp_levels: 0
+    speed_multiplier: 2
+    particle: SMOKE
   2:
     material: GOLD_INGOT
     amount: 32
     xp_levels: 0
+    speed_multiplier: 3
+    particle: FLAME
   3:
     material: DIAMOND
     amount: 32
     xp_levels: 0
+    speed_multiplier: 4
+    particle: CLOUD
   4:
     material: NETHERITE_INGOT
     amount: 20
     xp_levels: 0
+    speed_multiplier: 5
+    particle: SOUL_FIRE_FLAME
   5:
     material: NETHERITE_INGOT
     amount: 30
     xp_levels: 100
+    speed_multiplier: 6
+    particle: TOTEM_OF_UNDYING
 
